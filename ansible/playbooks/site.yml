@@ -4,6 +4,7 @@
   hosts: prod
   become: true
   vars_files:
+    - ../group_vars/all.yml
     - ../services.yml
 
   pre_tasks:
