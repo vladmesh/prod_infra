@@ -1,0 +1,23 @@
+---
+# Services configuration for deployment and Caddy reverse proxy
+# Each service is pulled from GitHub and proxied through Caddy
+
+services: []
+  # Example:
+  # - name: myapp
+  #   domain: myapp.example.com
+  #   port: 8080                              # exposed port for Caddy proxy
+  #   github_repo: myuser/myapp               # GitHub owner/repo
+  #   branch: main                            # optional, default: main
+  #   compose_file: docker-compose.prod.yml   # optional, default: docker-compose.prod.yml
+  #
+  # - name: api
+  #   domain: api.example.com
+  #   port: 3000
+  #   github_repo: myuser/api
+  #
+  # - name: blog
+  #   domain: blog.example.com
+  #   port: 4000
+  #   github_repo: myuser/blog
+  #   branch: production

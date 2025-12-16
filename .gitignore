@@ -1,0 +1,39 @@
+# Factory
+.factory/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ansible
+*.retry
+ansible/inventory/*.yml
+!ansible/inventory/*.example.yml
+.vault_pass
+
+# Secrets (never commit)
+*.vault
+*vault*.yml
+secrets/
+.env
+.env.*
+
+# Python (if using ansible with venv)
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.bak
