@@ -21,7 +21,7 @@ ansible/inventory/*.yml
 # Secrets (never commit)
 *.vault
 *vault*.yml
-secrets/
+/secrets/
 .env
 .env.*
 
