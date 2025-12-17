@@ -4,41 +4,36 @@
     path: /opt/services
     state: directory
     mode: '0755'
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
 
 - name: Deploy service deployment script
   template:
     src: deploy.sh.j2
     dest: /opt/services/deploy.sh
     mode: '0700'
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
 
 - name: Create directory for each service
   file:
     path: "/opt/services/{{ item.name }}"
     state: directory
     mode: '0755'
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
   loop: "{{ services }}"
   when: services | length > 0
 
-- name: Download docker-compose for each service
-  shell: |
-    TOKEN=$(cat /opt/secrets/github_token)
-    curl -sf -H "Authorization: token $TOKEN" \
-      "https://raw.githubusercontent.com/{{ item.github_repo }}/{{ item.branch | default('main') }}/{{ item.compose_file | default('docker-compose.prod.yml') }}" \
-      -o "/opt/services/{{ item.name }}/docker-compose.yml"
-  args:
-    executable: /bin/bash
+- name: Ensure service directories are owned by deploy user (recursive)
+  file:
+    path: "/opt/services/{{ item.name }}"
+    state: directory
+    recurse: yes
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
   loop: "{{ services }}"
-  when: services | length > 0 and item.github_repo is defined
-  register: compose_download
-  changed_when: compose_download.rc == 0
-  no_log: true
+  when: services | length > 0
 
-- name: Pull and start services
-  community.docker.docker_compose_v2:
-    project_src: "/opt/services/{{ item.name }}"
-    state: present
-    pull: always
-  loop: "{{ services }}"
-  when: services | length > 0 and item.github_repo is defined
-  register: service_start
-  notify: show service status
+# Note: docker-compose files and .env are deployed by each service's own CI/CD workflow
+# Ansible only prepares directories and Caddy config
