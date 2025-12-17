@@ -41,8 +41,3 @@
     name: docker
     enabled: yes
     state: started
-
-- name: Create docker network for services
-  docker_network:
-    name: services
-    state: present
