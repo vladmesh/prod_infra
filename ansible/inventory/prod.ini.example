@@ -1,3 +1,4 @@
+# Copy to prod.ini and set your server IP in ansible_host.
 [prod]
 vps ansible_host=YOUR_SERVER_IP
 

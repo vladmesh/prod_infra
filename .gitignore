@@ -37,3 +37,6 @@ venv/
 # Temp files
 *.tmp
 *.bak
+
+# real inventory (contains server IP)
+ansible/inventory/prod.ini
