@@ -1,158 +1,28 @@
-# Production Server Infrastructure
+# prod_infra
 
-Ansible playbooks для настройки и управления production сервером. Идемпотентные - можно запускать на голом сервере или на уже настроенном.
+> **Поглощён кодген-оркестратором.** Ansible-часть переехала в
+> [vladmesh/codegen_orchestrator](https://github.com/vladmesh/codegen_orchestrator), в
+> [`services/infra-service/ansible/`](https://github.com/vladmesh/codegen_orchestrator/tree/main/services/infra-service/ansible).
+> Этот репозиторий заморожен и остаётся как история; правки идут туда.
 
-## Что делает
+Идемпотентные Ansible-плейбуки для настройки production-сервера: SSH hardening и UFW с fail2ban,
+Docker CE с compose-плагином, Caddy как reverse proxy с автоматическим TLS, restic для бэкапов,
+node exporter для метрик железа.
 
-- **Security**: SSH hardening (отключен root, только ключи), UFW firewall, fail2ban
-- **Docker**: Docker CE + Compose plugin
-- **Caddy**: Reverse proxy с автоматическими SSL сертификатами
-- **Backup**: Restic + cron для бэкапов
-- **Monitoring**: Node exporter для метрик железа
+Отдельным репозиторием это прожило месяц. Инвентарь с самого начала ходил в API оркестратора
+(`api_inventory.py`, переменная `ORCHESTRATOR_API_URL`), то есть инфраструктура и так была его
+частью — держать её в стороне от кода, который ей управляет, смысла не было.
 
-## Быстрый старт
+## Где искать
 
-```bash
-cd ansible
+Роли переехали как есть (`common`, `docker`, `caddy`, `backup`, `monitoring`, `security`,
+`services`) и с тех пор развивались: добавились `deploy_target` и `qa_identity`, плейбуки
+провижининга и health-check, promtail в мониторинге. Динамический инвентарь научился новому
+`ORCHESTRATOR_API_BASE_URL`.
 
-# 1. Установить зависимости
-make install
+Ничего, чего нет в оркестраторе, здесь не осталось.
 
-# 2. Настроить inventory (указать IP сервера)
-vim inventory/prod.ini
+---
 
-# 3. Первый запуск на свежем сервере (от root)
-make bootstrap
-
-# 4. Полная настройка
-make deploy
-```
-
-## Структура
-
-```
-prod_infra/
-├── README.md
-├── plan.md              # планы и заметки
-└── ansible/
-    ├── ansible.cfg
-    ├── Makefile
-    ├── requirements.yml
-    ├── services.yml     # сервисы для Caddy proxy
-    ├── inventory/
-    │   └── prod.ini
-    ├── group_vars/
-    │   └── all.yml
-    ├── playbooks/
-    │   ├── bootstrap.yml
-    │   └── site.yml
-    └── roles/
-        ├── common/      # базовые пакеты, deploy user
-        ├── security/    # SSH, firewall, fail2ban
-        ├── docker/      # Docker + Compose
-        ├── caddy/       # reverse proxy
-        ├── backup/      # restic бэкапы
-        └── monitoring/  # node_exporter
-```
-
-## Конфигурация
-
-### Добавление сервера
-
-`ansible/inventory/prod.ini`:
-```ini
-[prod]
-myserver ansible_host=1.2.3.4
-
-[prod:vars]
-ansible_user=deploy
-```
-
-### Добавление сервисов для проксирования
-
-`ansible/services.yml`:
-```yaml
-services:
-  - name: myapp
-    domain: myapp.example.com
-    upstream: "localhost:8080"
-    
-  - name: api
-    domain: api.example.com
-    upstream: "localhost:3000"
-```
-
-### Настройка бэкапов
-
-`ansible/group_vars/all.yml`:
-```yaml
-backup_enabled: true
-backup_repository: "s3:s3.amazonaws.com/my-backup-bucket"
-backup_paths:
-  - /opt/services
-  - /opt/caddy
-```
-
-Пароль для restic хранить в ansible-vault:
-```bash
-ansible-vault encrypt_string 'my-secret-password' --name 'backup_password'
-```
-
-### Изменение портов firewall
-
-`ansible/group_vars/all.yml`:
-```yaml
-firewall_allowed_ports:
-  - "22/tcp"
-  - "80/tcp"
-  - "443/tcp"
-  - "9100/tcp"  # node_exporter (если нужен внешний доступ)
-```
-
-## Команды
-
-| Команда | Описание |
-|---------|----------|
-| `make install` | Установить ansible collections |
-| `make bootstrap` | Первый запуск на свежем сервере (от root) |
-| `make deploy` | Полный деплой (от deploy user) |
-| `make check` | Dry run - показать что изменится |
-| `make syntax` | Проверить синтаксис playbooks |
-
-## Порядок первого запуска
-
-1. Получить доступ к серверу по SSH как root
-2. Убедиться что локальный SSH ключ `~/.ssh/id_ed25519.pub` существует
-3. `make install` - установить зависимости
-4. `make bootstrap` - создаст пользователя deploy с sudo
-5. `make deploy` - настроит всё остальное
-
-После этого root доступ будет отключен, вход только по ключу через пользователя deploy.
-
-## Мониторинг
-
-Node exporter доступен на порту 9100. Метрики можно собирать внешним Prometheus:
-
-```yaml
-scrape_configs:
-  - job_name: 'node'
-    static_configs:
-      - targets: ['your-server:9100']
-```
-
-## Troubleshooting
-
-**Не могу подключиться после bootstrap:**
-- Убедись что SSH ключ добавлен правильно
-- Проверь что используешь пользователя deploy: `ssh deploy@server`
-
-**Fail2ban заблокировал:**
-```bash
-# На сервере
-sudo fail2ban-client set sshd unbanip YOUR_IP
-```
-
-**Проверить статус firewall:**
-```bash
-sudo ufw status verbose
-```
+Инвентарь с реальным хостом (`ansible/inventory/prod.ini`) в этом репозитории никогда не хранился:
+в дереве лежит только `prod.ini.example` с плейсхолдером, а история вычищена 19.06.2026.
